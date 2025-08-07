@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aplikasi Postingan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .post-image {
+      max-width: 100%;
+      height: auto;
+      border-radius: 0.5rem;
+      margin-top: 1rem;
+    }
+    .post-card {
+      transition: transform 0.2s ease-in-out;
+    }
+    .post-card:hover {
+      transform: translateY(-5px);
+    }
+    .image-preview {
+      max-height: 200px;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div class="container mx-auto px-4 py-8">
+    <header class="text-center mb-12">
+      <h1 class="text-4xl font-bold text-indigo-700 mb-2">Aplikasi Postingan</h1>
+      <p class="text-gray-600">Buat dan simpan postingan dengan gambar</p>
+    </header>
+
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+      <h2 class="text-2xl font-semibold mb-4 text-gray-800">Buat Postingan Baru</h2>
+      <form id="postForm" class="space-y-4">
+        <div>
+          <label for="title" class="block text-sm font-medium text-gray-700">Judul</label>
+          <input type="text" id="title" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+        </div>
+        
+        <div>
+          <label for="content" class="block text-sm font-medium text-gray-700">Konten</label>
+          <textarea id="content" rows="4" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+        </div>
+        
+        <div>
+          <label for="image" class="block text-sm font-medium text-gray-700">Gambar (Opsional)</label>
+          <input type="file" id="image" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+          
+          <div id="imagePreviewContainer" class="mt-2 hidden">
+            <p class="text-sm text-gray-500 mb-1">Pratinjau Gambar:</p>
+            <img id="imagePreview" class="image-preview rounded border border-gray-200">
+          </div>
+        </div>
+        
+        <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          Simpan Postingan
+        </button>
+      </form>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-lg p-6">
+      <h2 class="text-2xl font-semibold mb-6 text-gray-800">Postingan Anda</h2>
+      
+      <div id="postsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Postingan akan ditampilkan di sini -->
+        <div class="text-center py-8 text-gray-500" id="emptyState">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <p class="mt-2">Belum ada postingan. Buat postingan pertama Anda!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Elemen form
+      const postForm = document.getElementById('postForm');
+      const titleInput = document.getElementById('title');
+      const contentInput = document.getElementById('content');
+      const imageInput = document.getElementById('image');
+      const imagePreview = document.getElementById('imagePreview');
+      const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+      const postsContainer = document.getElementById('postsContainer');
+      const emptyState = document.getElementById('emptyState');
+
+      // Menampilkan preview gambar
+      imageInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+          const file = e.target.files[0];
+          const reader = new FileReader();
+          
+          reader.onload = function(event) {
+            imagePreview.src = event.target.result;
+            imagePreviewContainer.classList.remove('hidden');
+          };
+          
+          reader.readAsDataURL(file);
+        } else {
+          imagePreviewContainer.classList.add('hidden');
+        }
+      });
+
+      // Menangani submit form
+      postForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Dapatkan nilai dari form
+        const title = titleInput.value.trim();
+        const content = contentInput.value.trim();
+        const imageFile = imageInput.files[0];
+        
+        if (!title || !content) {
+          alert('Judul dan konten wajib diisi!');
+          return;
+        }
+        
+        // Buat objek postingan
+        const post = {
+          id: Date.now(),
+          title,
+          content,
+          image: imageFile ? 'uploaded' : null,
+          createdAt: new Date().toLocaleString()
+        };
+        
+        // Simpan ke localStorage
+        savePost(post);
+        
+        // Jika ada gambar, simpan ke localStorage (dalam bentuk Data URL)
+        if (imageFile) {
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            localStorage.setItem(`post-image-${post.id}`, event.target.result);
+          };
+          reader.readAsDataURL(imageFile);
+        }
+        
+        // Reset form
+        postForm.reset();
+        imagePreviewContainer.classList.add('hidden');
+        
+        // Tampilkan postingan baru
+        renderPosts();
+      });
+      
+      // Fungsi untuk menyimpan postingan
+      function savePost(post) {
+        const posts = getPosts();
+        posts.push(post);
+        localStorage.setItem('posts', JSON.stringify(posts));
+      }
+      
+      // Fungsi untuk mendapatkan semua postingan
+      function getPosts() {
+        return JSON.parse(localStorage.getItem('posts')) || [];
+      }
+      
+      // Fungsi untuk menampilkan semua postingan
+      function renderPosts() {
+        const posts = getPosts().reverse(); // Tampilkan yang terbaru duluan
+        
+        if (posts.length === 0) {
+          emptyState.classList.remove('hidden');
+          postsContainer.innerHTML = '';
+          postsContainer.appendChild(emptyState);
+          return;
+        }
+        
+        emptyState.classList.add('hidden');
+        postsContainer.innerHTML = '';
+        
+        posts.forEach(post => {
+          const postCard = document.createElement('div');
+          postCard.className = 'post-card bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 hover:shadow-lg';
+          
+          let imageHtml = '';
+          if (post.image) {
+            const imageData = localStorage.getItem(`post-image-${post.id}`);
+            imageHtml = imageData ? 
+              `<img src="${imageData}" alt="Gambar postingan berjudul ${post.title}" class="w-full h-48 object-cover">` : 
+              `<img src="https://placehold.co/600x400?text=Gambar+Tidak+Tersedia" alt="Gambar postingan tidak tersedia" class="w-full h-48 object-cover bg-gray-100">`;
+          }
+          
+          postCard.innerHTML = `
+            ${imageHtml}
+            <div class="p-4">
+              <h3 class="text-xl font-semibold text-gray-800 mb-2">${post.title}</h3>
+              <p class="text-gray-600 mb-3 whitespace-pre-line">${post.content}</p>
+              <div class="flex justify-between items-center text-sm text-gray-500">
+                <span>${post.createdAt}</span>
+                <button onclick="deletePost(${post.id})" class="text-red-500 hover:text-red-700">
+                  Hapus
+                </button>
+              </div>
+            </div>
+          `;
+          
+          postsContainer.appendChild(postCard);
+        });
+      }
+      
+      // Fungsi untuk menghapus postingan
+      window.deletePost = function(id) {
+        if (confirm('Apakah Anda yakin ingin menghapus postingan ini?')) {
+          const posts = getPosts().filter(post => post.id !== id);
+          localStorage.setItem('posts', JSON.stringify(posts));
+          localStorage.removeItem(`post-image-${id}`);
+          renderPosts();
+        }
+      };
+      
+      // Tampilkan postingan yang sudah ada saat pertama kali membuka halaman
+      renderPosts();
+    });
+  </script>
+</body>
+</html>
+
